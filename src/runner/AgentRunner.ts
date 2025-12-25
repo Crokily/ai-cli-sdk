@@ -50,6 +50,8 @@ const buildEnv = (
 
 const withNewline = (input: string): string => (input.endsWith("\n") ? input : `${input}\n`);
 
+export type PtySpawner = typeof spawn;
+
 export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
   private ptyProcess: IPty | undefined;
   private rawOutput = "";
@@ -57,7 +59,10 @@ export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
   private running = false;
   private lastAutoPrompt: string | null = null;
 
-  constructor(private readonly adapter: IAgentAdapter) {
+  constructor(
+    private readonly adapter: IAgentAdapter,
+    private readonly ptySpawn: PtySpawner = spawn,
+  ) {
     super();
   }
 
@@ -79,7 +84,7 @@ export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
     const rows = options.rows ?? config.rows ?? process.stdout.rows ?? DEFAULT_ROWS;
 
     try {
-      this.ptyProcess = spawn(config.command, config.args, {
+      this.ptyProcess = this.ptySpawn(config.command, config.args, {
         cwd,
         env,
         cols,

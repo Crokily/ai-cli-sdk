@@ -2,7 +2,7 @@ import { isAbsolute } from "node:path";
 import type { IAgentAdapter, InteractionContext, LaunchConfig } from "../interfaces/agent.js";
 
 const MOCK_SCRIPT = [
-  "const task = process.argv[2] ?? '';",
+  "const task = process.argv[1] ?? '';",
   "console.log(`MockAdapter start: ${task}`);",
   "process.stdout.write('\\u001b[32mProcessing...\\u001b[0m\\n');",
   "process.stdout.write('Confirm? (y/n): ');",
