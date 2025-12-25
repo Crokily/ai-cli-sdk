@@ -14,11 +14,7 @@ AI-CLI-SDK 是一个用于标准化调用各类 AI 辅助编程 CLI 工具（如
 
 ## 📦 安装 (Installation)
 
-```bash
-npm install ai-cli-sdk
-# or
-pnpm add ai-cli-sdk
-```
+暂无安装需求，直接引入即可。
 
 ## ⚡ 快速开始 (Quick Start)
 
