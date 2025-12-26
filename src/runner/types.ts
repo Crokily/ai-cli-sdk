@@ -14,6 +14,7 @@ export interface ExecuteOptions {
   cwd?: string;
   env?: Record<string, string>;
   envAllowlist?: string[];
+  commandAllowlist?: string[];
   cols?: number;
   rows?: number;
 }

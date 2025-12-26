@@ -1,63 +1,33 @@
-import ansis from "ansis";
+import { isAbsolute } from "node:path";
+import { AnsiStreamCleaner } from "../utils/AnsiStreamCleaner.js";
 import { spawn, type IPty } from "node-pty";
-import { TypedEventEmitter } from "../utils/TypedEventEmitter.js";
 import type { IAgentAdapter, InteractionContext } from "../interfaces/agent.js";
+import {
+  DEFAULT_COLS,
+  DEFAULT_ROWS,
+  buildEnv,
+  countNewlines,
+  getLastLine,
+  withNewline,
+} from "./runnerUtils.js";
+import { TypedEventEmitter } from "../utils/TypedEventEmitter.js";
 import type { AgentRunnerEvents, ExecuteOptions, RunResult } from "./types.js";
 
-const DEFAULT_ENV_ALLOWLIST = [
-  "PATH",
-  "HOME",
-  "USER",
-  "SHELL",
-  "TMPDIR",
-  "TMP",
-  "TEMP",
-  "TERM",
-  "COLORTERM",
-  "LANG",
-  "LC_ALL",
-  "LC_CTYPE",
-];
-const DEFAULT_COLS = 80;
-const DEFAULT_ROWS = 30;
-
-const getLastLine = (text: string): string => {
-  const index = text.lastIndexOf("\n");
-  return index === -1 ? text : text.slice(index + 1);
-};
-
-const applyEnv = (target: Record<string, string>, source?: Record<string, string>) => {
-  if (!source) return;
-  for (const [key, value] of Object.entries(source)) {
-    if (typeof value === "string") target[key] = value;
-  }
-};
-
-const buildEnv = (
-  configEnv?: Record<string, string>,
-  overrideEnv?: Record<string, string>,
-  allowlist: string[] = DEFAULT_ENV_ALLOWLIST,
-): Record<string, string> => {
-  const env: Record<string, string> = {};
-  for (const key of allowlist) {
-    const value = process.env[key];
-    if (typeof value === "string") env[key] = value;
-  }
-  applyEnv(env, configEnv);
-  applyEnv(env, overrideEnv);
-  return env;
-};
-
-const withNewline = (input: string): string => (input.endsWith("\n") ? input : `${input}\n`);
-
 export type PtySpawner = typeof spawn;
+
+type AutoPromptState = {
+  prompt: string;
+  lineCount: number;
+};
 
 export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
   private ptyProcess: IPty | undefined;
   private rawOutput = "";
   private cleanOutput = "";
+  private cleanOutputLineCount = 0;
   private running = false;
-  private lastAutoPrompt: string | null = null;
+  private lastAutoPrompt: AutoPromptState | null = null;
+  private ansiCleaner = new AnsiStreamCleaner();
 
   constructor(
     private readonly adapter: IAgentAdapter,
@@ -72,12 +42,26 @@ export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
 
   async execute(task: string, options: ExecuteOptions = {}): Promise<RunResult> {
     if (this.running) throw new Error("AgentRunner is already executing a task.");
-    this.running = true;
+
     this.rawOutput = "";
     this.cleanOutput = "";
+    this.cleanOutputLineCount = 0;
     this.lastAutoPrompt = null;
+    this.ansiCleaner.reset();
 
     const config = this.adapter.buildLaunchConfig(task);
+    const commandAllowlist = new Set([
+      ...(config.commandAllowlist ?? []),
+      ...(options.commandAllowlist ?? []),
+    ]);
+    if (!isAbsolute(config.command) && !commandAllowlist.has(config.command)) {
+      throw new Error(
+        `Command path must be absolute or allowlisted. Received "${config.command}".`,
+      );
+    }
+
+    this.running = true;
+
     const env = buildEnv(config.env, options.env, options.envAllowlist);
     const cwd = options.cwd ?? config.cwd ?? process.cwd();
     const cols = options.cols ?? config.cols ?? process.stdout.columns ?? DEFAULT_COLS;
@@ -128,8 +112,9 @@ export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
       ptyProcess.onData((data) => {
         if (settled) return;
         this.rawOutput += data;
-        const cleanChunk = ansis.strip(data);
+        const cleanChunk = this.ansiCleaner.strip(data);
         this.cleanOutput += cleanChunk;
+        this.cleanOutputLineCount += countNewlines(cleanChunk);
         this.emit("output", data);
 
         const lastLine = getLastLine(this.cleanOutput);
@@ -141,8 +126,13 @@ export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
 
         if (this.adapter.handleInteraction) {
           const response = this.adapter.handleInteraction(context);
-          if (response && this.lastAutoPrompt !== lastLine) {
-            this.lastAutoPrompt = lastLine;
+          if (
+            response &&
+            (!this.lastAutoPrompt ||
+              this.lastAutoPrompt.prompt !== lastLine ||
+              this.lastAutoPrompt.lineCount !== this.cleanOutputLineCount)
+          ) {
+            this.lastAutoPrompt = { prompt: lastLine, lineCount: this.cleanOutputLineCount };
             this.emit("interaction", { prompt: lastLine, response });
             this.write(response, true);
           }

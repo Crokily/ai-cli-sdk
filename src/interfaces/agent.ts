@@ -1,6 +1,7 @@
 export interface LaunchConfig {
   command: string;
   args: string[];
+  commandAllowlist?: string[];
   cwd?: string;
   env?: Record<string, string>;
   cols?: number;
