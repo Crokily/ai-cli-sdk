@@ -2,7 +2,6 @@ import { isAbsolute } from "node:path";
 import type { IAgentAdapter, LaunchConfig } from "../interfaces/agent.js";
 
 const DEFAULT_COMMAND = "gemini";
-const PROMPT_FLAG = "--prompt";
 const ENV_KEYS = [
   "GEMINI_API_KEY",
   "GOOGLE_API_KEY",
@@ -26,7 +25,7 @@ export class GeminiAdapter implements IAgentAdapter {
   }
 
   buildLaunchConfig(task: string): LaunchConfig {
-    const args = [PROMPT_FLAG, sanitizePrompt(task)];
+    const args = [sanitizePrompt(task)];
     const config: LaunchConfig = {
       command: this.command,
       args,
