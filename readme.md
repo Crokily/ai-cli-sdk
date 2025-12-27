@@ -2,85 +2,121 @@
 
 **Universal AI CLI Orchestrator for Node.js**
 
-AI-CLI-SDK 是一个用于标准化调用各类 AI 辅助编程 CLI 工具（如 Claude Code, Gemini CLI, OpenAI Codex CLI 等）的统一包装器库。它通过 PTY（伪终端）模拟真实交互环境，解决了 CLI 工具对 TTY 的强依赖问题，并提供了统一的编程接口。
+AI-CLI-SDK is a unified wrapper library designed to orchestrate various AI-powered CLI tools (like Gemini CLI, Claude Code, etc.) through a standardized interface.
 
-## 🚀 核心特性 (Features)
+Think of it as a **"Universal Remote Control"** for AI CLIs. It handles the messy details of PTY (pseudo-terminal) management, ANSI color preservation, and process lifecycle, letting you focus on **"Input Task -> Get Result"**.
 
-*   **统一接口 (Unified Interface)**: 无论底层是哪个 AI 工具，上层调用代码保持一致。
-*   **环境隔离 (Environment Isolation)**: 基于 `node-pty` 模拟真实终端，完美支持彩色输出和交互式 CLI。
-*   **智能交互 (Smart Interaction)**: 内置自动应答机制，可自动处理 "Confirm? (y/n)" 等常见交互场景。
-*   **类型安全 (Type Safe)**: 全量 TypeScript 编写，提供完整的类型定义。
-*   **可扩展架构 (Extensible)**: 基于适配器模式，轻松扩展新的 AI CLI 支持。
+## 🚀 Key Features
 
-## 📦 安装 (Installation)
+*   **Unified Interface**: One code to rule them all. Switch between Gemini, Claude, or Mock agents without changing your logic.
+*   **Environment Isolation**: Runs CLIs inside a `node-pty` sandbox, simulating a real terminal to preserve colored output and rich formatting.
+*   **Smart Interactions**: Automatically handles TTY prompts (like confirmation dialogs) to prevent your automation from hanging.
+*   **Type-Safe**: Written in strict TypeScript with comprehensive type definitions.
 
-暂无安装需求，直接引入即可。
+---
 
-## ⚡ 快速开始 (Quick Start)
+## ⚡ Quick Start
+
+### 1. Installation
+```bash
+npm install ai-cli-sdk
+# or
+pnpm add ai-cli-sdk
+```
+*Note: Requires Node.js >= 18 and native build tools for `node-pty`.*
+
+### 2. Basic Usage (The 3-Step Flow)
 
 ```typescript
 import { AgentFactory, AgentRunner } from 'ai-cli-sdk';
 
 async function main() {
-  // 1. 创建工厂
+  // 1. Create an Adapter (e.g., 'gemini' or 'mock')
+  // The factory handles the specific CLI configuration for you.
   const factory = new AgentFactory();
+  const adapter = factory.create('gemini'); 
 
-  // 2. 创建适配器 (目前支持: 'mock', 'gemini')
-  const adapter = factory.create('mock');
-
-  // 3. 初始化运行器
+  // 2. Initialize the Runner
+  // The runner manages the process lifecycle and event streaming.
   const runner = new AgentRunner(adapter);
 
-  // 4. 监听事件
-  runner.on('output', (data) => {
-    process.stdout.write(data); // 实时打印彩色输出
+  // 3. Execute a Task
+  // Pass your prompt and optional environment configuration.
+  console.log("🚀 Starting task...");
+  const result = await runner.execute("Write a Hello World function in TypeScript", {
+    envAllowlist: ["GEMINI_API_KEY"] // Safely pass API keys
   });
 
-  runner.on('interaction', ({ prompt, response }) => {
-    console.log(`\n🤖 Auto-replied to: "${prompt.trim()}" with "${response}"`);
-  });
-
-  runner.on('completed', (result) => {
-    console.log('\n✨ Task Completed!');
-    process.exit(0);
-  });
-
-  // 5. 执行任务
-  await runner.execute('Refactor login function');
+  // Done!
+  console.log("\n✨ Result:\n");
+  console.log(result.cleanOutput);
 }
 
 main().catch(console.error);
 ```
 
-## 🛠️ 开发与测试 (Development)
+---
 
-本项目使用 `vitest` 进行测试。由于依赖原生模块 `node-pty`，请确保您的开发环境具备编译工具链。
+## 📚 Core Concepts
 
-### 前置要求
-*   Node.js >= 18
-*   Python (for node-gyp)
-*   Xcode Command Line Tools (macOS) / build-essential (Linux)
+### 1. AgentRunner ("The Engine")
+The heart of the SDK. It manages the PTY process, cleans ANSI streams, and emits events. It doesn't care *which* AI is running, only that it follows the standard interface.
 
-### 运行测试
-```bash
-# 运行单元测试与集成测试
-npm test
+### 2. AgentFactory ("The Assembler")
+A centralized registry to create pre-configured adapters.
+*   `factory.create('gemini')`: Returns a stateless adapter for Gemini CLI.
+*   `factory.create('mock')`: Returns a mock adapter for testing.
+
+### 3. Adapters ("The Translators")
+Each CLI tool has a specific adapter (e.g., `GeminiAdapter`) that translates your generic task into the specific command-line arguments (e.g., `gemini --prompt "..."`) required by that tool.
+
+---
+
+## 💡 Advanced Usage
+
+### Event Streaming (Real-time UI)
+Build custom dashboards or UIs by listening to events instead of waiting for the final result.
+
+```typescript
+runner.on('output', (data) => {
+  process.stdout.write(data); // Stream colored output in real-time
+});
+
+runner.on('interaction', ({ prompt, response }) => {
+  console.log(`🤖 AI Auto-replied to: "${prompt}" with "${response}"`);
+});
+
+await runner.execute("Analyze this project structure");
 ```
 
-## ❓ 常见问题 (Troubleshooting)
+### Automation & Scripting
+Use it to build automated workflows, like CI/CD code review bots.
 
-### Error: posix_spawnp failed.
-
-如果在 macOS 上运行测试时遇到此错误，通常是因为 `node-pty` 的辅助二进制文件缺少执行权限，或者是终端应用未获得“开发者工具”权限。
-
-**解决方案 1 (权限修复):**
-检查并赋予 spawn-helper 执行权限：
-```bash
-chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper
+```typescript
+// Example: Automated Code Review
+const diff = await getGitDiff(); // Your custom function
+await runner.execute(`Review the following git diff for bugs:\n${diff}`, {
+  cwd: process.cwd(),
+  envAllowlist: ["API_KEY"]
+});
 ```
 
-**解决方案 2 (系统设置):**
-前往 **系统设置** -> **隐私与安全性** -> **开发者工具**，添加您的终端应用（如 iTerm2 或 VSCode）。
+---
+
+## 🛠️ Development & Testing
+
+This project uses `pnpm` and `vitest`.
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run tests
+npx vitest
+```
+
+**Troubleshooting `node-pty` on macOS:**
+If you encounter `posix_spawnp failed`, ensure your terminal app has "Developer Tools" permissions in System Settings -> Privacy & Security.
 
 ## 📄 License
 
