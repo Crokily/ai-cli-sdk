@@ -19,17 +19,7 @@ Think of it as a **"Universal Remote Control"** for AI CLIs. It handles the deta
 *   **Smart Interactions**: Automatically handles TTY prompts (like confirmation dialogs) to prevent your automation from hanging.
 *   **Type-Safe**: Written in strict TypeScript with comprehensive type definitions.
 
-### Quick Start
-
-#### 1. Installation
-```bash
-npm install ai-cli-sdk
-# or
-pnpm add ai-cli-sdk
-```
-*Note: Requires Node.js >= 18 and native build tools for `node-pty`.*
-
-#### 2. Basic Usage (The 3-Step Flow)
+### Basic Usage (The 3-Step Flow)
 
 ```typescript
 import { AgentFactory, AgentRunner } from 'ai-cli-sdk';
@@ -62,7 +52,7 @@ main().catch(console.error);
 ### Core Concepts
 
 #### 1. AgentRunner ("The Engine")
-The heart of the SDK. It manages the PTY process, cleans ANSI streams, and emits events. It doesn't care *which* AI is running, only that it follows the standard interface.
+The heart of the SDK. It manages the PTY process, cleans ANSI streams, and emits events. It doesn't care which AI is running, only that it follows the standard interface.
 
 #### 2. AgentFactory ("The Assembler")
 A centralized registry to create pre-configured adapters.
@@ -135,17 +125,7 @@ AI-CLI-SDK 是一个用于标准化调用各类 AI 辅助编程 CLI 工具（如
 *   **智能交互**: 自动处理 TTY 提示（如确认对话框），防止自动化任务卡死。
 *   **类型安全**: 全量 TypeScript 编写，提供完整的类型定义。
 
-### 快速开始
-
-#### 1. 安装
-```bash
-npm install ai-cli-sdk
-# 或
-pnpm add ai-cli-sdk
-```
-*注意: 需要 Node.js >= 18 以及用于编译 `node-pty` 的原生构建工具。*
-
-#### 2. 基础用法 (标准3步走)
+### 基础用法 (标准3步走)
 
 ```typescript
 import { AgentFactory, AgentRunner } from 'ai-cli-sdk';
