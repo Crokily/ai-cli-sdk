@@ -25,7 +25,7 @@ async function main() {
   // 1. 创建工厂
   const factory = new AgentFactory();
 
-  // 2. 创建适配器 (目前支持: 'mock', 未来支持: 'claude', 'gemini' 等)
+  // 2. 创建适配器 (目前支持: 'mock', 'gemini')
   const adapter = factory.create('mock');
 
   // 3. 初始化运行器

@@ -2,4 +2,5 @@ export type { IAgentAdapter, InteractionContext, LaunchConfig } from "./interfac
 export { AgentRunner } from "./runner/AgentRunner.js";
 export type { AgentRunnerEvents, ExecuteOptions, InteractionEvent, RunResult } from "./runner/types.js";
 export { AgentFactory } from "./factory/AgentFactory.js";
+export { GeminiAdapter } from "./adapters/GeminiAdapter.js";
 export { MockAdapter } from "./adapters/MockAdapter.js";
