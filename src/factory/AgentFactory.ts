@@ -1,4 +1,5 @@
 import type { IAgentAdapter } from "../interfaces/agent.js";
+import { GeminiAdapter } from "../adapters/GeminiAdapter.js";
 import { MockAdapter } from "../adapters/MockAdapter.js";
 
 export type AdapterFactory = () => IAgentAdapter;
@@ -10,6 +11,7 @@ export class AgentFactory {
 
   constructor() {
     this.register("mock", () => new MockAdapter());
+    this.register("gemini", () => new GeminiAdapter());
   }
 
   register(name: string, factory: AdapterFactory): void {

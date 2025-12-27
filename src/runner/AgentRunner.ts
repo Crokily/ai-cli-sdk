@@ -62,7 +62,11 @@ export class AgentRunner extends TypedEventEmitter<AgentRunnerEvents> {
 
     this.running = true;
 
-    const env = buildEnv(config.env, options.env, options.envAllowlist);
+    const envAllowlist = [
+      ...(config.envAllowlist ?? []),
+      ...(options.envAllowlist ?? []),
+    ];
+    const env = buildEnv(config.env, options.env, envAllowlist);
     const cwd = options.cwd ?? config.cwd ?? process.cwd();
     const cols = options.cols ?? config.cols ?? process.stdout.columns ?? DEFAULT_COLS;
     const rows = options.rows ?? config.rows ?? process.stdout.rows ?? DEFAULT_ROWS;

@@ -39,10 +39,11 @@ const applyEnv = (target: Record<string, string>, source?: Record<string, string
 export const buildEnv = (
   configEnv?: Record<string, string>,
   overrideEnv?: Record<string, string>,
-  allowlist: string[] = DEFAULT_ENV_ALLOWLIST,
+  allowlist: string[] = [],
 ): Record<string, string> => {
   const env: Record<string, string> = {};
-  for (const key of allowlist) {
+  const mergedAllowlist = new Set([...DEFAULT_ENV_ALLOWLIST, ...allowlist]);
+  for (const key of mergedAllowlist) {
     const value = process.env[key];
     if (typeof value === "string") env[key] = value;
   }
